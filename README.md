@@ -4,8 +4,8 @@ A proxy server that allows you to use Anthropic's Claude API with Ollama-compati
 
 ## Features
 
-- **Direct Claude API Access**: Use the `/v1/messages` endpoint with Claude API format.
-- **Ollama Compatibility**: Use the `/generate` endpoint with Ollama-style requests.
+- **Ollama Compatibility**: Use the `/api/generate` endpoint with Ollama-style requests.
+- **Built-in Testing UI**: Use the web interface at the root URL to test the proxy.
 - **Model Mapping**: Simple names like `claude` are mapped to appropriate Claude model IDs.
 - **Parameter Support**: Works with temperature, top_p, top_k, and other common settings.
 - **Flexible Interface**: Supports both Ollama and Claude API clients.
@@ -30,25 +30,23 @@ A proxy server that allows you to use Anthropic's Claude API with Ollama-compati
    make run
    ```
 
-## Using with Claude API Format
+## Using the Testing UI
 
-You can send requests directly using Claude's API format:
+Once the server is running, you can access the built-in testing UI by opening your browser to:
 
-```bash
-curl -X POST http://localhost:8080/v1/messages \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "claude-3-opus-20240229",
-    "messages": [
-      {
-        "role": "user",
-        "content": "What is the capital of France?"
-      }
-    ],
-    "max_tokens": 100,
-    "temperature": 0.7
-  }'
 ```
+http://localhost:8080/
+```
+
+The UI provides a simple interface to:
+- Select a Claude model to use
+- Adjust parameters like temperature and max tokens
+- Enter a prompt
+- View the generated response
+- See the raw JSON request being sent
+
+![Claude API Tester UI Screenshot](docs/images/ui-screenshot.png)
+(You'll need to create this screenshot after running the server)
 
 ## Using with Ollama Clients
 
@@ -57,7 +55,7 @@ With the proxy running, you can use Ollama clients by pointing them to your prox
 Example curl request:
 
 ```bash
-curl -X POST http://localhost:8080/generate \
+curl -X POST http://localhost:8080/api/generate \
   -H "Content-Type: application/json" \
   -d '{
     "model": "claude",
