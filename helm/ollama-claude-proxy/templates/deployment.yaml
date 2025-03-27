@@ -33,8 +33,10 @@ spec:
                   name: {{ include "ollama-claude-proxy.fullname" . }}
                   key: {{ .Values.secret.key }}
                   {{- end }}
-          args:
-            - "-config=/etc/ollama-claude-proxy/config.json"
+          command:
+            - "/app/ollama-claude-proxy"
+            - "-config"
+            - "/etc/ollama-claude-proxy/config.json"
           volumeMounts:
             - name: config-volume
               mountPath: /etc/ollama-claude-proxy

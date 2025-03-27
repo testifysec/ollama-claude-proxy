@@ -36,7 +36,7 @@ func DefaultConfig() Config {
 }
 
 // LoadConfig loads the configuration from various sources
-// Priority order: 
+// Priority order:
 // 1. Environment variables (highest priority)
 // 2. Config file (if provided)
 // 3. Default values (lowest priority)

@@ -25,9 +25,9 @@ func testConfig() Config {
 
 // Constants for testing
 const (
-	testModelOpus    = ModelID("claude-3-opus-20240229")
-	testModelSonnet  = ModelID("claude-3-sonnet-20240229")
-	testModelHaiku   = ModelID("claude-3-haiku-20240307")
+	testModelOpus     = ModelID("claude-3-opus-20240229")
+	testModelSonnet   = ModelID("claude-3-sonnet-20240229")
+	testModelHaiku    = ModelID("claude-3-haiku-20240307")
 	testModelSonnet35 = ModelID("claude-3-5-sonnet-20240620")
 )
 

@@ -30,6 +30,9 @@ WORKDIR /app
 # Copy binary from builder stage
 COPY --from=builder /app/ollama-claude-proxy .
 
+# Copy templates directory
+COPY templates/ /app/templates/
+
 # Set ownership and permissions
 RUN chown -R appuser:appgroup /app && \
     chmod +x /app/ollama-claude-proxy

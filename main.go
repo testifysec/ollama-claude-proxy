@@ -55,8 +55,8 @@ type MessageContent struct {
 }
 
 type Message struct {
-	Role     MessageRole      `json:"role"`
-	Content  []MessageContent `json:"content"`
+	Role    MessageRole      `json:"role"`
+	Content []MessageContent `json:"content"`
 }
 
 type ClaudeRequest struct {
@@ -76,28 +76,45 @@ type ClaudeContent struct {
 }
 
 type ClaudeResponse struct {
-	ID        string         `json:"id"`
-	Type      string         `json:"type"`
-	Role      string         `json:"role"`
-	Content   []ClaudeContent `json:"content"`
-	StopReason string        `json:"stop_reason"`
+	ID         string          `json:"id"`
+	Type       string          `json:"type"`
+	Role       string          `json:"role"`
+	Content    []ClaudeContent `json:"content"`
+	StopReason string          `json:"stop_reason"`
 }
 
 // Server holds the server configuration and dependencies
 type Server struct {
-	config     Config
-	modelMap   map[string]ModelID
-	templates  *template.Template
+	config    Config
+	modelMap  map[string]ModelID
+	templates *template.Template
 }
 
 // NewServer creates a new proxy server instance
 func NewServer(config Config) *Server {
-	// Parse templates
-	tmpl, err := template.ParseGlob(filepath.Join("templates", "*.html"))
+	// Try to parse templates from multiple possible locations
+	var tmpl *template.Template
+	var err error
+
+	// Try different template paths that might be used in different environments
+	templatePaths := []string{
+		filepath.Join("templates", "*.html"),
+		filepath.Join("/app/templates", "*.html"),
+		filepath.Join(".", "templates", "*.html"),
+	}
+
+	for _, path := range templatePaths {
+		tmpl, err = template.ParseGlob(path)
+		if err == nil {
+			log.Printf("Successfully loaded templates from: %s", path)
+			break
+		}
+	}
+
 	if err != nil {
 		log.Printf("Warning: Failed to parse templates: %v", err)
 	}
-	
+
 	return &Server{
 		config:    config,
 		modelMap:  buildModelMap(config),
@@ -205,13 +222,13 @@ func getFirstContentText(resp *ClaudeResponse) string {
 	if resp == nil || len(resp.Content) == 0 {
 		return ""
 	}
-	
+
 	for _, content := range resp.Content {
 		if content.Type == "text" {
 			return content.Text
 		}
 	}
-	
+
 	return ""
 }
 
@@ -317,20 +334,20 @@ func (s *Server) handleUI(w http.ResponseWriter, r *http.Request) {
 	}
 
 	templateData := struct {
-		SystemPrompt  string
-		DefaultModel  string
-		APIEndpoint   string
+		SystemPrompt   string
+		DefaultModel   string
+		APIEndpoint    string
 		RequestTimeout int
-		Models        []struct {
+		Models         []struct {
 			Name  string
 			Value string
 		}
 	}{
-		SystemPrompt:  s.config.SystemPrompt,
-		DefaultModel:  s.config.DefaultModel,
-		APIEndpoint:   s.config.APIEndpoint,
+		SystemPrompt:   s.config.SystemPrompt,
+		DefaultModel:   s.config.DefaultModel,
+		APIEndpoint:    s.config.APIEndpoint,
 		RequestTimeout: s.config.RequestTimeoutSecs,
-		Models:        models,
+		Models:         models,
 	}
 
 	if err := s.templates.ExecuteTemplate(w, "index.html", templateData); err != nil {
@@ -351,12 +368,12 @@ func (s *Server) Start(port string) error {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-		
+
 		if r.Method == "OPTIONS" {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
-		
+
 		s.handleOllamaGenerate(w, r)
 	})
 
