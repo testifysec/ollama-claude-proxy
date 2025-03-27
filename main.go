@@ -50,6 +50,7 @@ type Server struct {
 	claudeClient *anthropic.Client
 	apiKey       string
 	modelMap     map[string]anthropic.Model
+	claudeAPIURL string // For testing override
 }
 
 // NewServer creates a new proxy server instance
@@ -58,6 +59,7 @@ func NewServer(apiKey string) *Server {
 		claudeClient: anthropic.NewClient(apiKey),
 		apiKey:       apiKey,
 		modelMap:     buildModelMap(),
+		claudeAPIURL: claudeAPIURL,
 	}
 }
 
@@ -112,7 +114,11 @@ func (s *Server) handleClaudeMessages(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Forward directly to Anthropic API
-	req, err := http.NewRequest("POST", claudeAPIURL, strings.NewReader(string(body)))
+	apiURL := s.claudeAPIURL
+	if apiURL == "" {
+		apiURL = claudeAPIURL
+	}
+	req, err := http.NewRequest("POST", apiURL, strings.NewReader(string(body)))
 	if err != nil {
 		http.Error(w, "Error creating request: "+err.Error(), http.StatusInternalServerError)
 		return
