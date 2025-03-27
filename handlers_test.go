@@ -11,7 +11,7 @@ import (
 )
 
 func TestHandleOllamaGenerate_BadRequest(t *testing.T) {
-	server := NewServer("test-api-key")
+	server := NewServer(testConfig())
 
 	// Create an invalid request with malformed JSON
 	req := httptest.NewRequest(http.MethodPost, "/api/generate", strings.NewReader("invalid json"))
@@ -35,7 +35,7 @@ func TestHandleOllamaGenerate_BadRequest(t *testing.T) {
 
 func TestServerHTTPHandlers(t *testing.T) {
 	// Create a test server with routes properly set up
-	server := NewServer("test-api-key")
+	server := NewServer(testConfig())
 
 	// Create a test HTTP server
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

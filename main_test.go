@@ -10,19 +10,40 @@ import (
 	"time"
 )
 
+// Helper to create test config
+func testConfig() Config {
+	return Config{
+		APIKey:             "test-api-key",
+		Port:               "8080",
+		APIVersion:         "2023-06-01",
+		APIEndpoint:        "https://api.anthropic.com/v1/messages",
+		SystemPrompt:       "You are Claude, an AI assistant by Anthropic.",
+		DefaultModel:       "claude-3-5-sonnet-20240620",
+		RequestTimeoutSecs: 60,
+	}
+}
+
+// Constants for testing
+const (
+	testModelOpus    = ModelID("claude-3-opus-20240229")
+	testModelSonnet  = ModelID("claude-3-sonnet-20240229")
+	testModelHaiku   = ModelID("claude-3-haiku-20240307")
+	testModelSonnet35 = ModelID("claude-3-5-sonnet-20240620")
+)
+
 // Test the model mapping functionality
 func TestMapModelName(t *testing.T) {
-	server := NewServer("test-api-key")
+	server := NewServer(testConfig())
 
 	testCases := []struct {
 		input    string
 		expected ModelID
 	}{
-		{"claude", ModelClaude3Opus20240229},
-		{"Claude", ModelClaude3Opus20240229}, // Test case insensitivity
-		{"claude-3-haiku", ModelClaude3Haiku20240307},
-		{"claude-3.5-sonnet", ModelClaude3Dot5SonnetLatest},
-		{"unknown-model", defaultClaudeModelID}, // Default model
+		{"claude", testModelOpus},
+		{"Claude", testModelOpus}, // Test case insensitivity
+		{"claude-3-haiku", testModelHaiku},
+		{"claude-3.5-sonnet", testModelSonnet35},
+		{"unknown-model", testModelSonnet35}, // Default model
 	}
 
 	for _, tc := range testCases {
@@ -114,7 +135,7 @@ func TestHandleOllamaGenerate_RequestParsing(t *testing.T) {
 
 // Test the health check endpoint
 func TestHealthCheck(t *testing.T) {
-	server := NewServer("test-api-key")
+	server := NewServer(testConfig())
 	req := httptest.NewRequest(http.MethodGet, "/health", nil)
 	recorder := httptest.NewRecorder()
 

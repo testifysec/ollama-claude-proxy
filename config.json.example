@@ -1,0 +1,9 @@
+{
+  "port": "8080",
+  "api_key": "sk-ant-your-api-key-here",
+  "api_version": "2023-06-01",
+  "api_endpoint": "https://api.anthropic.com/v1/messages",
+  "system_prompt": "You are Claude, an AI assistant by Anthropic.",
+  "default_model": "claude-3-5-sonnet-20240620",
+  "request_timeout_secs": 60
+}

@@ -84,10 +84,33 @@ The proxy maps simple model names to Claude model IDs:
 
 ## Configuration
 
-Environment variables:
+### Environment Variables
 
 - `ANTHROPIC_API_KEY`: Your Anthropic API key (required)
 - `PORT`: Port to run the server on (default: 8080)
+
+### Config File
+
+You can also provide configuration via a JSON file using the `-config` flag:
+
+```bash
+./ollama-claude-proxy -config=/path/to/config.json
+```
+
+Example config.json:
+```json
+{
+  "port": "8080",
+  "api_key": "sk-ant-your-api-key-here",
+  "api_version": "2023-06-01",
+  "api_endpoint": "https://api.anthropic.com/v1/messages",
+  "system_prompt": "You are Claude, an AI assistant by Anthropic.",
+  "default_model": "claude-3-5-sonnet-20240620",
+  "request_timeout_secs": 60
+}
+```
+
+Note: The API key can be provided either in the config file or as an environment variable. For security reasons, using the environment variable is recommended for local development.
 
 ## Docker Support
 
@@ -118,11 +141,19 @@ The project includes a Helm chart for easy deployment to Kubernetes.
 ```bash
 # Install using Helm
 helm install ollama-claude-proxy ./helm/ollama-claude-proxy \
-  --set env.ANTHROPIC_API_KEY=sk-ant-your-api-key-here
+  --set secret.apiKey=sk-ant-your-api-key-here
+
+# Or to override configuration:
+helm install ollama-claude-proxy ./helm/ollama-claude-proxy \
+  --set secret.apiKey=sk-ant-your-api-key-here \
+  --set config.systemPrompt="You are Claude, a helpful AI assistant." \
+  --set config.defaultModel=claude-3-opus-20240229
 
 # Or using the Makefile (set DOCKER_REPO first)
 DOCKER_REPO=your-docker-repo make helm-install
 ```
+
+The Helm chart uses a ConfigMap for configuration and a Secret for storing the API key.
 
 ### Minikube Deployment
 

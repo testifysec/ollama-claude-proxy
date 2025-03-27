@@ -31,12 +31,14 @@ tolerations: []
 # Optional affinity settings
 affinity: {}
 
-# Environment variables for the proxy
-env:
-  # Required: Anthropic API key (should be provided in a Secret)
-  ANTHROPIC_API_KEY: ""
-  # Optional: Port to run on (default: 8080)
-  PORT: "8080"
+# Server configuration
+config:
+  # Claude API configuration
+  apiVersion: "2023-06-01"
+  apiEndpoint: "https://api.anthropic.com/v1/messages"
+  systemPrompt: "You are Claude, an AI assistant by Anthropic."
+  defaultModel: "claude-3-5-sonnet-20240620"
+  requestTimeoutSecs: 60
 
 # Secret containing the Anthropic API key
 # If using an existing secret, set existingSecret to the name of the secret
@@ -45,6 +47,7 @@ secret:
   create: true
   name: ollama-claude-proxy
   key: anthropic-api-key
+  apiKey: "" # Your Anthropic API key (required if create is true)
   existingSecret: ""
   existingSecretKey: ""
 

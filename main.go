@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"html/template"
 	"io"
@@ -15,30 +16,8 @@ import (
 	"time"
 )
 
-// Configuration constants
-const (
-	defaultPort          = "8080"
-	claudeAPIVersion     = "2023-06-01"
-	defaultSystemPrompt  = "You are Claude, an AI assistant by Anthropic."
-	claudeAPIURL         = "https://api.anthropic.com/v1/messages"
-)
-
 // ModelID represents a Claude model identifier
 type ModelID string
-
-// Claude model identifiers
-const (
-	ModelClaude3Opus20240229    ModelID = "claude-3-opus-20240229"
-	ModelClaude3Sonnet20240229  ModelID = "claude-3-sonnet-20240229"
-	ModelClaude3Haiku20240307   ModelID = "claude-3-haiku-20240307"
-	ModelClaude2Dot0            ModelID = "claude-2.0"
-	ModelClaude2Dot1            ModelID = "claude-2.1"
-	ModelClaude3Dot5SonnetLatest ModelID = "claude-3-5-sonnet-20240620"
-	ModelClaude3Dot7SonnetLatest ModelID = "claude-3-7-sonnet-20240610"
-)
-
-// Default model for unknown mappings
-const defaultClaudeModelID = ModelClaude3Dot5SonnetLatest
 
 // Ollama API structures
 type OllamaRequest struct {
@@ -106,13 +85,13 @@ type ClaudeResponse struct {
 
 // Server holds the server configuration and dependencies
 type Server struct {
-	apiKey     string
+	config     Config
 	modelMap   map[string]ModelID
 	templates  *template.Template
 }
 
 // NewServer creates a new proxy server instance
-func NewServer(apiKey string) *Server {
+func NewServer(config Config) *Server {
 	// Parse templates
 	tmpl, err := template.ParseGlob(filepath.Join("templates", "*.html"))
 	if err != nil {
@@ -120,26 +99,26 @@ func NewServer(apiKey string) *Server {
 	}
 	
 	return &Server{
-		apiKey:    apiKey,
-		modelMap:  buildModelMap(),
+		config:    config,
+		modelMap:  buildModelMap(config),
 		templates: tmpl,
 	}
 }
 
 // Builds a map of Ollama model names to Claude model IDs
-func buildModelMap() map[string]ModelID {
+func buildModelMap(config Config) map[string]ModelID {
 	return map[string]ModelID{
-		"claude":            ModelClaude3Opus20240229,
-		"claude-3":          ModelClaude3Opus20240229,
-		"claude-3-opus":     ModelClaude3Opus20240229,
-		"claude-3-sonnet":   ModelClaude3Sonnet20240229,
-		"claude-3-haiku":    ModelClaude3Haiku20240307,
-		"claude-2":          ModelClaude2Dot0,
-		"claude-2.1":        ModelClaude2Dot1,
-		"claude-3.5":        ModelClaude3Dot5SonnetLatest,
-		"claude-3.5-sonnet": ModelClaude3Dot5SonnetLatest,
-		"claude-3.7":        ModelClaude3Dot7SonnetLatest,
-		"claude-3.7-sonnet": ModelClaude3Dot7SonnetLatest,
+		"claude":            "claude-3-opus-20240229",
+		"claude-3":          "claude-3-opus-20240229",
+		"claude-3-opus":     "claude-3-opus-20240229",
+		"claude-3-sonnet":   "claude-3-sonnet-20240229",
+		"claude-3-haiku":    "claude-3-haiku-20240307",
+		"claude-2":          "claude-2.0",
+		"claude-2.1":        "claude-2.1",
+		"claude-3.5":        "claude-3-5-sonnet-20240620",
+		"claude-3.5-sonnet": "claude-3-5-sonnet-20240620",
+		"claude-3.7":        "claude-3-7-sonnet-20240610",
+		"claude-3.7-sonnet": "claude-3-7-sonnet-20240610",
 	}
 }
 
@@ -153,7 +132,7 @@ func (s *Server) mapModelName(name string) ModelID {
 	}
 
 	// Default to default model if not found
-	return defaultClaudeModelID
+	return ModelID(s.config.DefaultModel)
 }
 
 // Create a user message from text
@@ -171,6 +150,15 @@ func NewUserTextMessage(text string) Message {
 
 // Call the Claude API directly
 func (s *Server) callClaudeAPI(ctx context.Context, claudeReq ClaudeRequest) (*ClaudeResponse, error) {
+	// Get API key from environment if not in config
+	apiKey := s.config.APIKey
+	if apiKey == "" {
+		apiKey = os.Getenv("ANTHROPIC_API_KEY")
+		if apiKey == "" {
+			return nil, fmt.Errorf("API key not found in config or environment")
+		}
+	}
+
 	// Marshal the request body
 	reqBody, err := json.Marshal(claudeReq)
 	if err != nil {
@@ -178,7 +166,7 @@ func (s *Server) callClaudeAPI(ctx context.Context, claudeReq ClaudeRequest) (*C
 	}
 
 	// Create the HTTP request
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, claudeAPIURL, bytes.NewBuffer(reqBody))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.config.APIEndpoint, bytes.NewBuffer(reqBody))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -186,11 +174,11 @@ func (s *Server) callClaudeAPI(ctx context.Context, claudeReq ClaudeRequest) (*C
 	// Set headers
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("X-Api-Key", s.apiKey)
-	req.Header.Set("Anthropic-Version", claudeAPIVersion)
+	req.Header.Set("X-Api-Key", apiKey)
+	req.Header.Set("Anthropic-Version", s.config.APIVersion)
 
 	// Send the request
-	client := &http.Client{Timeout: 60 * time.Second}
+	client := &http.Client{Timeout: time.Duration(s.config.RequestTimeoutSecs) * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to call Claude API: %w", err)
@@ -246,7 +234,7 @@ func (s *Server) handleOllamaGenerate(w http.ResponseWriter, r *http.Request) {
 		Messages: []Message{
 			NewUserTextMessage(ollamaReq.Prompt),
 		},
-		System:    defaultSystemPrompt,
+		System:    s.config.SystemPrompt,
 		MaxTokens: ollamaReq.Options.NumPredict,
 	}
 
@@ -312,7 +300,40 @@ func (s *Server) handleUI(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.templates.ExecuteTemplate(w, "index.html", nil); err != nil {
+	// Get models for display
+	models := make([]struct {
+		Name  string
+		Value string
+	}, 0, len(s.modelMap))
+
+	for name, id := range s.modelMap {
+		models = append(models, struct {
+			Name  string
+			Value string
+		}{
+			Name:  name + " (" + string(id) + ")",
+			Value: name,
+		})
+	}
+
+	templateData := struct {
+		SystemPrompt  string
+		DefaultModel  string
+		APIEndpoint   string
+		RequestTimeout int
+		Models        []struct {
+			Name  string
+			Value string
+		}
+	}{
+		SystemPrompt:  s.config.SystemPrompt,
+		DefaultModel:  s.config.DefaultModel,
+		APIEndpoint:   s.config.APIEndpoint,
+		RequestTimeout: s.config.RequestTimeoutSecs,
+		Models:        models,
+	}
+
+	if err := s.templates.ExecuteTemplate(w, "index.html", templateData); err != nil {
 		log.Printf("Error rendering template: %v", err)
 		http.Error(w, "Error rendering UI", http.StatusInternalServerError)
 		return
@@ -346,19 +367,17 @@ func (s *Server) Start(port string) error {
 }
 
 func main() {
-	// Get the Anthropic API key from environment
-	apiKey := os.Getenv("ANTHROPIC_API_KEY")
-	if apiKey == "" {
-		log.Fatal("ANTHROPIC_API_KEY environment variable not set")
-	}
+	// Define command-line flags
+	configPathPtr := flag.String("config", "", "Path to configuration file")
+	flag.Parse()
 
-	// Get port from environment or use default
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = defaultPort
+	// Load configuration
+	config, err := LoadConfig(*configPathPtr)
+	if err != nil {
+		log.Fatalf("Failed to load configuration: %v", err)
 	}
 
 	// Create and start server
-	server := NewServer(apiKey)
-	log.Fatal(server.Start(port))
+	server := NewServer(config)
+	log.Fatal(server.Start(config.Port))
 }

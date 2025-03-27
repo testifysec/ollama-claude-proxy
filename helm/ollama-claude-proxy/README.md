@@ -24,7 +24,13 @@ To install the chart with the release name `my-release`:
 ```bash
 # Using a stored Anthropic API key
 helm install my-release my-repo/ollama-claude-proxy \
-  --set env.ANTHROPIC_API_KEY=sk-ant-your-api-key-here
+  --set secret.apiKey=sk-ant-your-api-key-here
+
+# Customizing the configuration
+helm install my-release my-repo/ollama-claude-proxy \
+  --set secret.apiKey=sk-ant-your-api-key-here \
+  --set config.systemPrompt="You are Claude, a helpful AI assistant." \
+  --set config.defaultModel=claude-3-opus-20240229
 
 # Using an existing secret
 helm install my-release my-repo/ollama-claude-proxy \
@@ -58,8 +64,12 @@ The following table lists the configurable parameters of the Ollama-Claude proxy
 | `resources.limits.memory`               | Memory resource limits                                                        | `128Mi`                       |
 | `resources.requests.cpu`                | CPU resource requests                                                         | `100m`                        |
 | `resources.requests.memory`             | Memory resource requests                                                      | `64Mi`                        |
-| `env.ANTHROPIC_API_KEY`                 | Anthropic API key (only if not using existingSecret)                          | `""`                          |
-| `env.PORT`                              | Port to run the service on                                                    | `"8080"`                      |
+| `config.apiVersion`                      | Claude API version                                                           | `"2023-06-01"`                |
+| `config.apiEndpoint`                    | Claude API endpoint                                                           | `"https://api.anthropic.com/v1/messages"` |
+| `config.systemPrompt`                   | System prompt for Claude                                                      | `"You are Claude, an AI assistant by Anthropic."` |
+| `config.defaultModel`                   | Default Claude model                                                          | `"claude-3-5-sonnet-20240620"` |
+| `config.requestTimeoutSecs`             | Request timeout in seconds                                                    | `60`                          |
+| `secret.apiKey`                         | Anthropic API key (only if not using existingSecret)                          | `""`                          |
 | `secret.create`                         | Whether to create a Secret                                                    | `true`                        |
 | `secret.name`                           | Name of the Secret                                                            | `ollama-claude-proxy`         |
 | `secret.key`                            | Key in the Secret for the API key                                             | `anthropic-api-key`           |
@@ -96,9 +106,18 @@ service:
   type: LoadBalancer
   port: 8080
 
+# Configuration for the proxy
+config:
+  systemPrompt: "You are Claude, a helpful AI assistant with expert knowledge."
+  defaultModel: "claude-3-opus-20240229"
+  requestTimeoutSecs: 120
+
+# API key handling
 secret:
-  existingSecret: "api-keys"
-  existingSecretKey: "anthropic-api-key"
+  apiKey: "sk-ant-your-api-key-here"  # For demo only - use secrets in production
+  # Or use existing secret:
+  # existingSecret: "api-keys"
+  # existingSecretKey: "anthropic-api-key"
 
 resources:
   limits:
