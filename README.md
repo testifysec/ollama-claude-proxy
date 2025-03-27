@@ -9,8 +9,10 @@ A proxy server that allows you to use Anthropic's Claude API with Ollama-compati
 - **Model Mapping**: Simple names like `claude` are mapped to appropriate Claude model IDs.
 - **Parameter Support**: Works with temperature, top_p, top_k, and other common settings.
 - **Flexible Interface**: Supports both Ollama and Claude API clients.
+- **Docker Support**: Run as a container with the provided Dockerfile.
+- **Kubernetes Support**: Deploy to Kubernetes using the included Helm chart.
 
-## Setup
+## Quick Setup
 
 1. Clone this repository
 2. Create an environment file with your Anthropic API key:
@@ -18,13 +20,14 @@ A proxy server that allows you to use Anthropic's Claude API with Ollama-compati
    cp .env.example .env
    # Edit .env to include your API key
    ```
-3. Build the application:
+3. Build and run:
    ```bash
+   # Local build
    go build
-   ```
-4. Run the proxy with environment variables:
-   ```bash
    source .env && ./ollama-claude-proxy
+   
+   # Or using make
+   make run
    ```
 
 ## Using with Claude API Format
@@ -87,6 +90,43 @@ Environment variables:
 
 - `ANTHROPIC_API_KEY`: Your Anthropic API key (required)
 - `PORT`: Port to run the server on (default: 8080)
+
+## Docker Support
+
+Build and run the Docker image:
+
+```bash
+# Build the image
+docker build -t ollama-claude-proxy .
+
+# Run the container
+docker run -p 8080:8080 -e ANTHROPIC_API_KEY=sk-ant-your-api-key-here ollama-claude-proxy
+```
+
+Or using Make:
+
+```bash
+# Build image
+make build
+
+# Run container (uses .env file)
+make docker-run
+```
+
+## Kubernetes Deployment
+
+The project includes a Helm chart for easy deployment to Kubernetes.
+
+```bash
+# Install using Helm
+helm install ollama-claude-proxy ./helm/ollama-claude-proxy \
+  --set env.ANTHROPIC_API_KEY=sk-ant-your-api-key-here
+
+# Or using the Makefile (set DOCKER_REPO first)
+DOCKER_REPO=your-docker-repo make helm-install
+```
+
+For more details on Helm chart configuration, see [helm/ollama-claude-proxy/README.md](helm/ollama-claude-proxy/README.md).
 
 ## Limitations
 

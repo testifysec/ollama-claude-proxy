@@ -1,0 +1,30 @@
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile
+.dockerignore
+
+# Helm
+helm/
+
+# Environment variables
+.env*
+
+# Test files
+*_test.go
+coverage.out
+
+# Binaries
+ollama-claude-proxy
+
+# IDE files
+.vscode/
+.idea/
+
+# Other
+README.md
+DESIGN.md
+TODO.md
+LICENSE
