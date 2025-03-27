@@ -1,0 +1,14 @@
+apiVersion: v2
+name: ollama-claude-proxy
+description: A Helm chart for the Ollama-Claude proxy service
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+maintainers:
+  - name: Maintainer
+    email: maintainer@example.com
+keywords:
+  - ollama
+  - claude
+  - ai
+  - proxy

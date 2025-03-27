@@ -1,0 +1,72 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "ollama-claude-proxy.fullname" . }}-test-connection"
+  labels:
+    {{- include "ollama-claude-proxy.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  containers:
+    - name: curl
+      image: curlimages/curl:7.86.0
+      command: ["sh", "-c"]
+      args:
+        - |
+          # Test health endpoint
+          echo "Testing health endpoint..."
+          HEALTH_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://{{ include "ollama-claude-proxy.fullname" . }}:{{ .Values.service.port }}/health)
+          if [ "$HEALTH_CODE" != "200" ]; then
+            echo "Health check failed with status code $HEALTH_CODE"
+            exit 1
+          fi
+          echo "Health check successful"
+          
+          # Test Claude API endpoint with a simple request
+          echo "Testing Claude API endpoint..."
+          RESPONSE=$(curl -s -X POST http://{{ include "ollama-claude-proxy.fullname" . }}:{{ .Values.service.port }}/v1/messages \
+            -H "Content-Type: application/json" \
+            -H "x-api-key: dummy-test-key" \
+            -d '{
+              "model": "claude-3-opus-20240229",
+              "messages": [
+                {
+                  "role": "user",
+                  "content": "Say test"
+                }
+              ],
+              "max_tokens": 10
+            }')
+            
+          # Check if we got a successful response with content
+          if [[ ! "$RESPONSE" == *"content"* ]]; then
+            echo "Invalid response from API endpoint: $RESPONSE"
+            exit 1
+          fi
+          echo "API endpoint test successful (got valid Claude response)"
+          
+          # Test Ollama compatibility endpoint
+          echo "Testing Ollama compatibility endpoint..."
+          RESPONSE=$(curl -s -X POST http://{{ include "ollama-claude-proxy.fullname" . }}:{{ .Values.service.port }}/generate \
+            -H "Content-Type: application/json" \
+            -d '{
+              "model": "claude",
+              "prompt": "Say test",
+              "options": {
+                "temperature": 0.7,
+                "num_predict": 10
+              },
+              "stream": false
+            }')
+            
+          # Check if we got a successful response with content
+          if [[ ! "$RESPONSE" == *"response"* ]]; then
+            echo "Invalid response from Ollama endpoint: $RESPONSE"
+            exit 1
+          fi
+          echo "Ollama endpoint test successful (got valid response)"
+          
+          # All tests passed
+          echo "All connectivity tests passed!"
+  restartPolicy: Never

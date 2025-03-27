@@ -4,7 +4,7 @@
 *.dll
 *.so
 *.dylib
-ollama-claude-proxy
+./ollama-claude-proxy
 
 # Environment files
 .env

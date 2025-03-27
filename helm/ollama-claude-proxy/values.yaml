@@ -1,0 +1,76 @@
+# Default values for ollama-claude-proxy.
+
+replicaCount: 1
+
+image:
+  repository: ollama-claude-proxy
+  tag: latest
+  pullPolicy: IfNotPresent
+
+nameOverride: ""
+fullnameOverride: ""
+
+service:
+  type: ClusterIP
+  port: 8080
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 128Mi
+  requests:
+    cpu: 100m
+    memory: 64Mi
+
+# Optional nodeSelector to control where the pod is scheduled
+nodeSelector: {}
+
+# Optional tolerations
+tolerations: []
+
+# Optional affinity settings
+affinity: {}
+
+# Environment variables for the proxy
+env:
+  # Required: Anthropic API key (should be provided in a Secret)
+  ANTHROPIC_API_KEY: ""
+  # Optional: Port to run on (default: 8080)
+  PORT: "8080"
+
+# Secret containing the Anthropic API key
+# If using an existing secret, set existingSecret to the name of the secret
+# and existingSecretKey to the key in the secret that contains the API key
+secret:
+  create: true
+  name: ollama-claude-proxy
+  key: anthropic-api-key
+  existingSecret: ""
+  existingSecretKey: ""
+
+# Probe configuration for liveness and readiness
+probes:
+  liveness:
+    enabled: true
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readiness:
+    enabled: true
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+# Ingress configuration
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: ollama-claude-proxy.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
