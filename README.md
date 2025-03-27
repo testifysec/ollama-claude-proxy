@@ -126,6 +126,33 @@ helm install ollama-claude-proxy ./helm/ollama-claude-proxy \
 DOCKER_REPO=your-docker-repo make helm-install
 ```
 
+### Minikube Deployment
+
+For local testing and development, you can use Minikube to deploy the proxy:
+
+```bash
+# Start Minikube if not already running
+minikube start
+
+# Deploy to Minikube using the script
+source .env  # To load your ANTHROPIC_API_KEY
+make minikube-deploy
+
+# Run tests against the Minikube deployment
+make minikube-test
+make test-client-minikube
+
+# Delete the deployment when done
+make minikube-delete
+```
+
+The deployment script will:
+1. Build a Docker image in Minikube's Docker environment
+2. Create a Kubernetes namespace if needed
+3. Deploy the Helm chart to the Minikube cluster
+4. Run validation tests to ensure the proxy is working correctly
+5. Output the URL to access the service
+
 For more details on Helm chart configuration, see [helm/ollama-claude-proxy/README.md](helm/ollama-claude-proxy/README.md).
 
 ## Limitations

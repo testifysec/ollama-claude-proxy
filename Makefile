@@ -1,4 +1,4 @@
-.PHONY: build run test clean helm-package helm-install helm-uninstall
+.PHONY: build run test clean helm-package helm-install helm-uninstall minikube-deploy minikube-test minikube-delete
 
 # Docker image configuration
 IMAGE_NAME ?= ollama-claude-proxy
@@ -7,7 +7,7 @@ DOCKER_REPO ?=
 
 # Helm configuration
 HELM_RELEASE ?= ollama-claude-proxy
-HELM_NAMESPACE ?= default
+HELM_NAMESPACE ?= ollama-claude-proxy
 
 # Build the Docker image
 build:
@@ -58,3 +58,25 @@ helm-install:
 # Uninstall the Helm chart
 helm-uninstall:
 	helm uninstall $(HELM_RELEASE) --namespace $(HELM_NAMESPACE)
+
+# Deploy to Minikube
+minikube-deploy:
+	@./scripts/deploy-minikube.sh
+
+# Run Helm tests for the deployment in Minikube
+minikube-test:
+	@helm test $(HELM_RELEASE) --namespace $(HELM_NAMESPACE)
+
+# Delete the deployment from Minikube
+minikube-delete:
+	@helm delete $(HELM_RELEASE) --namespace $(HELM_NAMESPACE)
+
+# Run client test against local deployment
+test-client:
+	@./scripts/test-client.sh
+
+# Run client test against Minikube deployment
+test-client-minikube:
+	@MINIKUBE_IP=$$(minikube ip) && \
+	NODE_PORT=$$(kubectl get svc -n $(HELM_NAMESPACE) $(HELM_RELEASE) -o jsonpath='{.spec.ports[0].nodePort}') && \
+	./scripts/test-client.sh http://$${MINIKUBE_IP}:$${NODE_PORT}
